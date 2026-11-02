@@ -26,6 +26,7 @@ use std::time::Duration;
 #[derive(Default)]
 pub struct State {
     is_multi_threaded: bool,
+    main_thread: Option<id>,
     ns_threads: HashMap<pthread_t, id>,
 }
 impl State {
@@ -84,6 +85,9 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 + (id)currentThread {
+    if env.current_thread == 0 {
+        return msg![env; this mainThread];
+    }
     // TODO: use ThreadId as key for lookup
     // `pthread_self` internally is O(num of threads) time
     let pthread = pthread_self(env);
@@ -96,6 +100,16 @@ pub const CLASSES: ClassExports = objc_classes! {
         State::get(env).ns_threads.insert(pthread, ns_thread);
     }
     *State::get(env).ns_threads.get(&pthread).unwrap()
+}
+
++ (id)mainThread {
+    if let Some(main_thread) = State::get(env).main_thread {
+        main_thread
+    } else {
+        let main_thread: id = msg_class![env; NSThread new];
+        State::get(env).main_thread = Some(main_thread);
+        main_thread
+    }
 }
 
 + (id)callStackReturnAddresses {
@@ -121,6 +135,11 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 + (bool)isMainThread {
     env.current_thread == 0
+}
+
+- (bool)isMainThread {
+    let main_thread: id = msg_class![env; NSThread mainThread];
+    this == main_thread
 }
 
 - (id)initWithTarget:(id)target
