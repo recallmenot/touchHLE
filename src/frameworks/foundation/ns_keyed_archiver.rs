@@ -90,6 +90,14 @@ pub const CLASSES: ClassExports = objc_classes! {
     scope.insert(key, Value::Integer(val.into()));
 }
 
+- (())encodeInt64:(i64)val
+           forKey:(id)key {
+    let key = normalize_key(env, key);
+    let scope = get_value_to_encode_for_current_key(env, this);
+    assert!(!scope.contains_key(&key));
+    scope.insert(key, Value::Integer(val.into()));
+}
+
 - (())encodeBytes:(ConstPtr<u8>)bytes
            length:(NSUInteger)length
            forKey:(id)key { // NSString *
