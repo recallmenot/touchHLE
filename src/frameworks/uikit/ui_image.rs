@@ -99,6 +99,9 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())dealloc {
+    // Guest code can over-release an imageNamed: result. Don't leave its
+    // address in the cache, where another object could later be allocated.
+    State::get_mut(env).cached_images.retain(|_, image| *image != this);
     let &UIImageHostObject { cg_image } = env.objc.borrow(this);
     CGImageRelease(env, cg_image);
 
